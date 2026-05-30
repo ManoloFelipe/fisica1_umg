@@ -50,7 +50,7 @@
     padding: 2rem 3rem;
     border-bottom: 1px solid var(--border);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 1.5rem;
     backdrop-filter: blur(10px);
   }
@@ -80,7 +80,40 @@
     color: var(--muted);
     letter-spacing: 0.15em;
     text-transform: uppercase;
-    margin-left: auto;
+  }
+
+  .formula-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.5rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--accent3);
+    letter-spacing: 0.05em;
+    line-height: 1.8;
+    position: relative;
+  }
+
+  .author-link {
+    position: absolute;
+    right: 1.5rem;
+    bottom: 1rem;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    text-decoration: none;
+    background: rgba(127,255,178,0.08);
+    border: 1px solid rgba(127,255,178,0.18);
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    letter-spacing: 0.15em;
+    transition: all 0.2s;
+  }
+
+  .author-link:hover {
+    color: var(--accent);
+    border-color: var(--accent);
   }
 
   .container {
@@ -419,9 +452,9 @@
 <body>
 
 <header>
-  <div class="logo">⚛ PhysicsLab</div>
   <h1>Calculadora de <span>Movimientos</span></h1>
-  <div class="subtitle">Cinemática · Visualización Gráfica · v1.0</div>
+  <div class="subtitle">
+  <a class="author-link" href="https://github.com/ManoloFelipe/fisica1_umg" target="_blank" rel="noopener noreferrer">Por Manolo Felipe · GitHub</a></div>
 </header>
 
 <div class="container">
