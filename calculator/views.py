@@ -91,7 +91,7 @@ def calc_mruv(p):
         velocities.append(round(v, 4))
         accelerations.append(round(a, 4))
 
-    # tiempo de parada si decelera
+    # tiempo de parada si desacelera
     t_stop = None
     if a != 0 and (v0 / a) < 0:
         t_stop = -v0 / a
@@ -248,6 +248,8 @@ def calc_parabolico(p):
     angle_deg = float(p.get('angle', 45))
     g = float(p.get('g', 9.81))
     y0 = float(p.get('y0', 0))
+
+    print(p)
 
     angle_rad = math.radians(angle_deg)
     v0x = v0 * math.cos(angle_rad)

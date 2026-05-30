@@ -548,7 +548,7 @@ const MOTIONS = {
     formula: 'x = v₀cos(θ)·t<br>y = y₀ + v₀sin(θ)t - ½gt²<br>R = v₀²sin(2θ)/g',
     params: [
       { id:'v0',    label:'Vel. inicial',    unit:'m/s',  min:1,   max:100, step:1,    def:30  },
-      { id:'angle', label:'Ángulo',          unit:'°',    min:1,   max:89,  step:1,    def:45  },
+      { id:'angle', label:'Ángulo',          unit:'°',    min:0,   max:89,  step:1,    def:45  },
       { id:'y0',    label:'Altura inicial',  unit:'m',    min:0,   max:100, step:1,    def:0   },
       { id:'g',     label:'Gravedad',        unit:'m/s²', min:1.6, max:25,  step:0.01, def:9.81},
     ],
@@ -591,7 +591,8 @@ function renderParams(type) {
 function getParams() {
   const params = {};
   MOTIONS[currentMotion].params.forEach(p => {
-    params[p.id] = parseFloat(document.getElementById('num-' + p.id).value) || p.def;
+    const value = parseFloat(document.getElementById('num-' + p.id).value);
+    params[p.id] = Number.isNaN(value) ? p.def : value;
   });
   return params;
 }
