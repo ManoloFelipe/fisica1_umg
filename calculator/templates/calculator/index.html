@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhysicsLab — Calculadora de Movimientos</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --panel: #111118;
+    --border: #1e1e2e;
+    --accent: #7fffb2;
+    --accent2: #ff6b6b;
+    --accent3: #6bcbff;
+    --accent4: #ffcc00;
+    --text: #e8e8f0;
+    --muted: #666680;
+    --card: #15151f;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(127,255,178,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(127,255,178,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  header {
+    position: relative;
+    z-index: 1;
+    padding: 2rem 3rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    backdrop-filter: blur(10px);
+  }
+
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    border: 1px solid var(--accent);
+    padding: 0.3rem 0.7rem;
+    border-radius: 2px;
+  }
+
+  header h1 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  header h1 span { color: var(--accent); }
+
+  .subtitle {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-left: auto;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem 3rem;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 2rem;
+    min-height: calc(100vh - 90px);
+  }
+
+  /* === LEFT PANEL === */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .motion-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .tab-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 0.75rem 0.5rem;
+    border-radius: 6px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  .tab-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .tab-btn.active {
+    background: rgba(127,255,178,0.08);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .tab-btn .tab-icon { font-size: 1.2rem; display: block; margin-bottom: 0.3rem; }
+
+  .params-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    flex: 1;
+  }
+
+  .params-panel h3 {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1.2rem;
+    font-family: 'Space Mono', monospace;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.75rem;
+  }
+
+  .param-group {
+    margin-bottom: 1.1rem;
+  }
+
+  .param-group label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .param-group label span {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    -webkit-appearance: none;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+    margin-bottom: 0.3rem;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(127,255,178,0.5);
+    transition: transform 0.1s;
+  }
+
+  input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.3);
+  }
+
+  .param-input-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .num-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.4rem 0.6rem;
+    border-radius: 4px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    width: 80px;
+    text-align: right;
+  }
+
+  .num-input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .unit-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .calc-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #0a0a0f;
+    border: none;
+    padding: 0.9rem;
+    border-radius: 6px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 1rem;
+  }
+
+  .calc-btn:hover {
+    background: #9fffc8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(127,255,178,0.3);
+  }
+
+  .calc-btn:active { transform: translateY(0); }
+
+  /* === RIGHT PANEL === */
+  .main-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .summary-strip {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .summary-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem 1.1rem;
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .summary-card .s-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.3rem;
+  }
+
+  .summary-card .s-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+    flex: 1;
+  }
+
+  .chart-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .chart-card.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .chart-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .chart-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+
+  .chart-wrap {
+    position: relative;
+    flex: 1;
+    min-height: 200px;
+  }
+
+  .formula-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.5rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--accent3);
+    letter-spacing: 0.05em;
+    line-height: 1.8;
+  }
+
+  .formula-box .formula-title {
+    color: var(--muted);
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Motion type indicator */
+  .motion-badge {
+    display: inline-block;
+    background: rgba(127,255,178,0.08);
+    border: 1px solid rgba(127,255,178,0.3);
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.6rem;
+    border-radius: 20px;
+    margin-bottom: 1rem;
+  }
+
+  .placeholder-msg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1rem;
+    height: 100%;
+    min-height: 300px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    text-align: center;
+    letter-spacing: 0.1em;
+  }
+
+  .placeholder-msg .big-icon { font-size: 3rem; opacity: 0.3; }
+
+  /* Loading spinner */
+  .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+    margin: 0 auto;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .container { grid-template-columns: 1fr; padding: 1rem; }
+    .charts-grid { grid-template-columns: 1fr; }
+    header { padding: 1.2rem; flex-wrap: wrap; }
+    .subtitle { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⚛ PhysicsLab</div>
+  <h1>Calculadora de <span>Movimientos</span></h1>
+  <div class="subtitle">Cinemática · Visualización Gráfica · v1.0</div>
+</header>
+
+<div class="container">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="motion-tabs">
+      <button class="tab-btn active" onclick="selectMotion('mru')" id="tab-mru">
+        <span class="tab-icon">➡️</span>MRU
+      </button>
+      <button class="tab-btn" onclick="selectMotion('mruv')" id="tab-mruv">
+        <span class="tab-icon">🚀</span>MRUV
+      </button>
+      <button class="tab-btn" onclick="selectMotion('mc')" id="tab-mc">
+        <span class="tab-icon">🔄</span>M. Circular
+      </button>
+      <button class="tab-btn" onclick="selectMotion('caida_libre')" id="tab-caida_libre">
+        <span class="tab-icon">🍎</span>Caída Libre
+      </button>
+      <button class="tab-btn" onclick="selectMotion('tiro_vertical')" id="tab-tiro_vertical">
+        <span class="tab-icon">☝️</span>Tiro Vertical
+      </button>
+      <button class="tab-btn" onclick="selectMotion('parabolico')" id="tab-parabolico">
+        <span class="tab-icon">🏹</span>Parabólico
+      </button>
+    </div>
+
+    <div class="params-panel">
+      <h3>⚙ Parámetros</h3>
+      <div id="params-container">
+        <!-- Dynamic params injected here -->
+      </div>
+      <div class="spinner" id="spinner"></div>
+      <button class="calc-btn" onclick="doCalculate()">▶ Calcular</button>
+    </div>
+
+    <div class="formula-box" id="formula-box">
+      <div class="formula-title">Fórmulas</div>
+      <div id="formula-content">x = x₀ + v·t<br>v = cte</div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <div class="motion-badge" id="motion-badge">MRU — Movimiento Rectilíneo Uniforme</div>
+    <div class="summary-strip" id="summary-strip">
+      <div style="color:var(--muted);font-family:'Space Mono',monospace;font-size:0.75rem;padding:1rem 0;">
+        Configure los parámetros y presione Calcular
+      </div>
+    </div>
+    <div class="charts-grid" id="charts-grid">
+      <div class="chart-card full-width">
+        <div class="placeholder-msg">
+          <div class="big-icon">📐</div>
+          <div>Selecciona un tipo de movimiento<br>y presiona CALCULAR</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let currentMotion = 'mru';
+let charts = [];
+
+// ============================================================
+// MOTION CONFIG
+// ============================================================
+const MOTIONS = {
+  mru: {
+    label: 'MRU — Movimiento Rectilíneo Uniforme',
+    formula: 'x = x₀ + v·t<br>v = constante<br>a = 0',
+    params: [
+      { id:'v',     label:'Velocidad',       unit:'m/s',  min:-50, max:50,  step:0.5,  def:10  },
+      { id:'x0',    label:'Posición inicial', unit:'m',    min:0,   max:100, step:1,    def:0   },
+      { id:'t_max', label:'Tiempo total',    unit:'s',    min:1,   max:60,  step:1,    def:10  },
+    ],
+    charts: ['pos-time','vel-time'],
+  },
+  mruv: {
+    label: 'MRUV — Movimiento Uniformemente Variado',
+    formula: 'x = x₀ + v₀t + ½at²<br>v = v₀ + at<br>a = constante',
+    params: [
+      { id:'v0',    label:'Vel. inicial',    unit:'m/s',  min:-50, max:50,  step:0.5,  def:0   },
+      { id:'a',     label:'Aceleración',     unit:'m/s²', min:-20, max:20,  step:0.5,  def:2   },
+      { id:'x0',    label:'Pos. inicial',    unit:'m',    min:0,   max:200, step:1,    def:0   },
+      { id:'t_max', label:'Tiempo total',    unit:'s',    min:1,   max:60,  step:1,    def:10  },
+    ],
+    charts: ['pos-time','vel-time','acc-time'],
+  },
+  mc: {
+    label: 'MC — Movimiento Circular',
+    formula: 'θ = ω·t<br>v = ω·r<br>a꜀ = ω²·r = v²/r<br>T = 2π/ω',
+    params: [
+      { id:'r',     label:'Radio',           unit:'m',    min:0.5, max:20,  step:0.5,  def:5   },
+      { id:'omega', label:'Vel. angular ω',  unit:'rad/s',min:0.1, max:10,  step:0.1,  def:1   },
+      { id:'t_max', label:'Tiempo total',    unit:'s',    min:1,   max:60,  step:1,    def:10  },
+    ],
+    charts: ['circle-xy','angle-time','vel-time'],
+  },
+  caida_libre: {
+    label: 'Caída Libre',
+    formula: 'y = h - ½gt²<br>v = gt<br>g = 9.81 m/s²<br>t = √(2h/g)',
+    params: [
+      { id:'h',     label:'Altura inicial',  unit:'m',    min:1,   max:500, step:1,    def:50  },
+      { id:'g',     label:'Gravedad',        unit:'m/s²', min:1.6, max:25,  step:0.01, def:9.81},
+    ],
+    charts: ['pos-time','vel-time'],
+  },
+  tiro_vertical: {
+    label: 'Tiro Vertical',
+    formula: 'y = y₀ + v₀t - ½gt²<br>v = v₀ - gt<br>h_max = y₀ + v₀²/(2g)',
+    params: [
+      { id:'v0',    label:'Vel. inicial',    unit:'m/s',  min:1,   max:100, step:1,    def:30  },
+      { id:'y0',    label:'Altura inicial',  unit:'m',    min:0,   max:200, step:1,    def:0   },
+      { id:'g',     label:'Gravedad',        unit:'m/s²', min:1.6, max:25,  step:0.01, def:9.81},
+    ],
+    charts: ['pos-time','vel-time'],
+  },
+  parabolico: {
+    label: 'Tiro Parabólico',
+    formula: 'x = v₀cos(θ)·t<br>y = y₀ + v₀sin(θ)t - ½gt²<br>R = v₀²sin(2θ)/g',
+    params: [
+      { id:'v0',    label:'Vel. inicial',    unit:'m/s',  min:1,   max:100, step:1,    def:30  },
+      { id:'angle', label:'Ángulo',          unit:'°',    min:1,   max:89,  step:1,    def:45  },
+      { id:'y0',    label:'Altura inicial',  unit:'m',    min:0,   max:100, step:1,    def:0   },
+      { id:'g',     label:'Gravedad',        unit:'m/s²', min:1.6, max:25,  step:0.01, def:9.81},
+    ],
+    charts: ['parab-xy','pos-time','vel-time'],
+  },
+};
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function selectMotion(type) {
+  currentMotion = type;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + type).classList.add('active');
+  renderParams(type);
+  document.getElementById('formula-content').innerHTML = MOTIONS[type].formula;
+  document.getElementById('motion-badge').textContent = MOTIONS[type].label;
+  resetCharts();
+}
+
+function renderParams(type) {
+  const cfg = MOTIONS[type];
+  const container = document.getElementById('params-container');
+  container.innerHTML = cfg.params.map(p => `
+    <div class="param-group">
+      <label>${p.label} <span id="val-${p.id}">${p.def}</span></label>
+      <input type="range" min="${p.min}" max="${p.max}" step="${p.step}" value="${p.def}"
+        oninput="document.getElementById('val-${p.id}').textContent=this.value;
+                 document.getElementById('num-${p.id}').value=this.value;">
+      <div class="param-input-row">
+        <input class="num-input" type="number" id="num-${p.id}" value="${p.def}" min="${p.min}" max="${p.max}" step="${p.step}"
+          oninput="this.previousElementSibling.previousElementSibling.value=this.value;
+                   document.getElementById('val-${p.id}').textContent=this.value;">
+        <span class="unit-label">${p.unit}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function getParams() {
+  const params = {};
+  MOTIONS[currentMotion].params.forEach(p => {
+    params[p.id] = parseFloat(document.getElementById('num-' + p.id).value) || p.def;
+  });
+  return params;
+}
+
+function resetCharts() {
+  charts.forEach(c => c.destroy());
+  charts = [];
+  document.getElementById('charts-grid').innerHTML = `
+    <div class="chart-card full-width">
+      <div class="placeholder-msg">
+        <div class="big-icon">📐</div>
+        <div>Presiona CALCULAR para ver la gráfica</div>
+      </div>
+    </div>`;
+  document.getElementById('summary-strip').innerHTML = '';
+}
+
+// ============================================================
+// CHART COLORS
+// ============================================================
+const COLORS = {
+  pos:  '#7fffb2',
+  vel:  '#6bcbff',
+  acc:  '#ff6b6b',
+  angle:'#ffcc00',
+  circ: '#c77dff',
+};
+
+function chartDefaults() {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 600, easing: 'easeInOutQuart' },
+    interaction: {
+      mode: 'index',
+      intersect: false,
+    },
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: '#0e0e18',
+        borderColor: '#7fffb2',
+        borderWidth: 1,
+        padding: 12,
+        titleColor: '#7fffb2',
+        bodyColor: '#e8e8f0',
+        footerColor: '#666680',
+        titleFont: { family: 'Space Mono', size: 10, weight: 'bold' },
+        bodyFont: { family: 'Space Mono', size: 11 },
+        footerFont: { family: 'Space Mono', size: 9 },
+        displayColors: true,
+        boxWidth: 8,
+        boxHeight: 8,
+        boxPadding: 4,
+        usePointStyle: true,
+        callbacks: {
+          title: function(items) {
+            if (!items.length) return '';
+            const raw = items[0].label;
+            return `⏱ t = ${parseFloat(raw).toFixed(3)} s`;
+          },
+          label: function(item) {
+            const label = item.dataset.label || '';
+            const val = typeof item.parsed.y !== 'undefined' ? item.parsed.y : item.parsed;
+            return `  ${label}: ${parseFloat(val).toFixed(3)}`;
+          },
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        ticks: { color: '#666680', font: { family: 'Space Mono', size: 9 }, maxTicksLimit: 8 },
+        border: { color: '#1e1e2e' },
+      },
+      y: {
+        grid: { color: 'rgba(255,255,255,0.04)' },
+        ticks: { color: '#666680', font: { family: 'Space Mono', size: 9 }, maxTicksLimit: 6 },
+        border: { color: '#1e1e2e' },
+      }
+    }
+  };
+}
+
+function makeLineDataset(data, color) {
+  return {
+    data,
+    borderColor: color,
+    borderWidth: 2.5,
+    pointRadius: 0,
+    tension: 0.3,
+    fill: {
+      target: 'origin',
+      above: color.replace(')', ',0.08)').replace('rgb(', 'rgba(').replace('#', 'rgba(').replace(/rgba\(([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2}),/, (m,r,g,b) => `rgba(${parseInt(r,16)},${parseInt(g,16)},${parseInt(b,16)},`),
+    }
+  };
+}
+
+// Quick color → rgba helper
+function hex2rgba(hex, alpha) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function addChart(canvasId, xLabels, datasets, yLabel) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  const opts = chartDefaults();
+  opts.scales.x.title = { display: true, text: 'Tiempo (s)', color: '#555575', font: { family:'Space Mono', size:9 } };
+  opts.scales.y.title = { display: true, text: yLabel, color: '#555575', font: { family:'Space Mono', size:9 } };
+  if (datasets.length > 1) {
+    opts.plugins.legend = {
+      display: true, position: 'top', align: 'end',
+      labels: { color: '#888', font: { family:'Space Mono', size:9 }, boxWidth:10, boxHeight:10, padding:8, usePointStyle:true }
+    };
+  }
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: xLabels,
+      datasets: datasets.map(d => ({
+        data: d.data,
+        borderColor: d.color,
+        borderWidth: 2.5,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: d.color,
+        pointHoverBorderColor: '#0e0e18',
+        pointHoverBorderWidth: 2,
+        tension: 0.3,
+        backgroundColor: hex2rgba(d.color, 0.06),
+        fill: true,
+        label: d.label || yLabel,
+      }))
+    },
+    options: opts
+  });
+  charts.push(chart);
+}
+
+function addScatterChart(canvasId, xData, yData, color, xLabel, yLabel, extraData) {
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  const opts = chartDefaults();
+  opts.scales.x.title = { display:true, text: xLabel, color:'#555575', font:{family:'Space Mono',size:9} };
+  opts.scales.y.title = { display:true, text: yLabel, color:'#555575', font:{family:'Space Mono',size:9} };
+  // Override tooltip for scatter (no time axis)
+  opts.interaction = { mode: 'nearest', intersect: false };
+  opts.plugins.tooltip.callbacks = {
+    title: function(items) {
+      if (!items.length) return '';
+      const pt = items[0].parsed;
+      return `${xLabel}: ${pt.x.toFixed(3)}`;
+    },
+    label: function(item) {
+      const pt = item.parsed;
+      const lines = [`  ${yLabel}: ${pt.y.toFixed(3)}`];
+      // if time data passed alongside
+      if (extraData && extraData.times) {
+        const idx = item.dataIndex;
+        lines.push(`  ⏱ t = ${extraData.times[idx].toFixed(3)} s`);
+      }
+      return lines;
+    },
+  };
+  const chart = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        data: xData.map((x,i) => ({ x, y: yData[i] })),
+        borderColor: color,
+        backgroundColor: hex2rgba(color, 0.5),
+        pointRadius: 1.5,
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: color,
+        pointHoverBorderColor: '#0e0e18',
+        pointHoverBorderWidth: 2,
+        showLine: true,
+        tension: 0.3,
+        borderWidth: 2,
+        label: `${xLabel} / ${yLabel}`,
+      }]
+    },
+    options: opts
+  });
+  charts.push(chart);
+}
+
+// ============================================================
+// RENDER SUMMARY
+// ============================================================
+function renderSummary(summary) {
+  const strip = document.getElementById('summary-strip');
+  strip.innerHTML = Object.entries(summary).map(([k,v]) => `
+    <div class="summary-card">
+      <div class="s-label">${k}</div>
+      <div class="s-value">${v}</div>
+    </div>
+  `).join('');
+}
+
+// ============================================================
+// RENDER CHARTS per motion type
+// ============================================================
+function renderCharts(type, data) {
+  const grid = document.getElementById('charts-grid');
+  grid.innerHTML = '';
+
+  if (type === 'mc') {
+    // Circle + angle + velocity
+    grid.innerHTML = `
+      <div class="chart-card">
+        <div class="chart-title"><div class="chart-dot" style="background:#c77dff"></div>Trayectoria Circular (X–Y)</div>
+        <div class="chart-wrap"><canvas id="c1"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title"><div class="chart-dot" style="background:#ffcc00"></div>Ángulo vs Tiempo</div>
+        <div class="chart-wrap"><canvas id="c2"></canvas></div>
+      </div>
+      <div class="chart-card full-width">
+        <div class="chart-title"><div class="chart-dot" style="background:#6bcbff"></div>Velocidad Tangencial vs Tiempo</div>
+        <div class="chart-wrap"><canvas id="c3"></canvas></div>
+      </div>
+    `;
+    addScatterChart('c1', data.x_pos, data.y_pos, COLORS.circ, 'X (m)', 'Y (m)', { times: data.times });
+    addChart('c2', data.times, [{data: data.angles, color: COLORS.angle, label:'Ángulo (°)'}], 'Ángulo (°)');
+    addChart('c3', data.times, [{data: data.velocities, color: COLORS.vel, label:'Vel. tangencial (m/s)'}], 'Velocidad (m/s)');
+
+  } else if (type === 'parabolico') {
+    grid.innerHTML = `
+      <div class="chart-card full-width">
+        <div class="chart-title"><div class="chart-dot" style="background:#7fffb2"></div>Trayectoria Parabólica (X–Y)</div>
+        <div class="chart-wrap" style="min-height:250px"><canvas id="c1"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title"><div class="chart-dot" style="background:#6bcbff"></div>Altura vs Tiempo</div>
+        <div class="chart-wrap"><canvas id="c2"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title"><div class="chart-dot" style="background:#ff6b6b"></div>Velocidad vs Tiempo</div>
+        <div class="chart-wrap"><canvas id="c3"></canvas></div>
+      </div>
+    `;
+    addScatterChart('c1', data.x_pos, data.y_pos, COLORS.pos, 'X (m)', 'Y (m)', { times: data.times });
+    addChart('c2', data.times, [{data: data.y_pos, color: COLORS.vel, label:'Altura (m)'}], 'Altura (m)');
+    addChart('c3', data.times, [
+      {data: data.vx, color: COLORS.acc, label:'vx (m/s)'},
+      {data: data.vy, color: COLORS.vel, label:'vy (m/s)'},
+      {data: data.velocities, color: COLORS.pos, label:'|v| (m/s)'},
+    ], 'Velocidad (m/s)');
+
+  } else if (type === 'mruv') {
+    grid.innerHTML = `
+      <div class="chart-card">
+        <div class="chart-title"><div class="chart-dot" style="background:#7fffb2"></div>Posición vs Tiempo</div>
+        <div class="chart-wrap"><canvas id="c1"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title"><div class="chart-dot" style="background:#6bcbff"></div>Velocidad vs Tiempo</div>
+        <div class="chart-wrap"><canvas id="c2"></canvas></div>
+      </div>
+      <div class="chart-card full-width">
+        <div class="chart-title"><div class="chart-dot" style="background:#ff6b6b"></div>Aceleración vs Tiempo</div>
+        <div class="chart-wrap"><canvas id="c3"></canvas></div>
+      </div>
+    `;
+    addChart('c1', data.times, [{data:data.positions, color:COLORS.pos, label:'Posición (m)'}], 'Posición (m)');
+    addChart('c2', data.times, [{data:data.velocities, color:COLORS.vel, label:'Velocidad (m/s)'}], 'Velocidad (m/s)');
+    addChart('c3', data.times, [{data:data.accelerations, color:COLORS.acc, label:'Aceleración (m/s²)'}], 'Aceleración (m/s²)');
+
+  } else {
+    // MRU, caída libre, tiro vertical → pos + vel
+    grid.innerHTML = `
+      <div class="chart-card">
+        <div class="chart-title"><div class="chart-dot" style="background:#7fffb2"></div>Posición vs Tiempo</div>
+        <div class="chart-wrap"><canvas id="c1"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title"><div class="chart-dot" style="background:#6bcbff"></div>Velocidad vs Tiempo</div>
+        <div class="chart-wrap"><canvas id="c2"></canvas></div>
+      </div>
+    `;
+    const posLabel = (type === 'caida_libre' || type === 'tiro_vertical') ? 'Altura (m)' : 'Posición (m)';
+    addChart('c1', data.times, [{data:data.positions, color:COLORS.pos, label: posLabel}], posLabel);
+    addChart('c2', data.times, [{data:data.velocities, color:COLORS.vel, label:'Velocidad (m/s)'}], 'Velocidad (m/s)');
+  }
+}
+
+// ============================================================
+// CALCULATE
+// ============================================================
+async function doCalculate() {
+  const spinner = document.getElementById('spinner');
+  spinner.style.display = 'block';
+  const params = getParams();
+
+  try {
+    const res = await fetch('/api/calculate/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: currentMotion, params }),
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error);
+
+    const data = json.data;
+    renderSummary(data.summary);
+    charts.forEach(c => c.destroy());
+    charts = [];
+    renderCharts(currentMotion, data);
+
+  } catch (err) {
+    alert('Error: ' + err.message);
+  } finally {
+    spinner.style.display = 'none';
+  }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+selectMotion('mru');
+</script>
+</body>
+</html>
